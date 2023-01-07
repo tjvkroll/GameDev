@@ -5,53 +5,38 @@ using UnityEngine.Tilemaps;
 
 public class TileMovement : MonoBehaviour
 {
-    public Vector2 tilePos;
+    public Grid grid; //  You can also use the Tilemap object
+    public Vector3Int coordinate;
     public float moveSpeed;
-    public Tilemap map;
     public GameObject spawn;
     // Start is called before the first frame update
     void Start()
     {
-        tilePos = new Vector2(-6, 5);
-
+        coordinate = new Vector3Int(0, 0, 0);
     }
 
     // Update is called once per frame
-    public Grid grid; //  You can also use the Tilemap object
     void Update()
     {
-        Vector3 mp = Input.mousePosition;
-        mp.z = 100;
-        Vector3 mouseWorldPos = Camera.main.ScreenToWorldPoint(mp);
+        transform.position = Vector3.MoveTowards(transform.position, grid.CellToWorld(coordinate), moveSpeed * Time.deltaTime);
         if (Input.GetMouseButtonDown(0))
-            Instantiate(spawn, mouseWorldPos, Quaternion.identity);
-        Vector3Int coordinate = grid.WorldToCell(mouseWorldPos);
-        Debug.Log(coordinate);
-        transform.position = Vector3.MoveTowards(transform.position, new Vector3(tilePos.x, transform.position.y, tilePos.y), moveSpeed * Time.deltaTime);
-        // if (Input.GetKeyDown(KeyCode.D))
-        // {
-        //     tilePos.x += 1;
-        // }
-        // else if (Input.GetKeyDown(KeyCode.A))
-        // {
-        //     tilePos.x -= 1;
-        // }
-        // if (Input.GetKeyDown(KeyCode.W))
-        // {
-        //     tilePos.y += 1;
-        // }
-        // else if (Input.GetKeyDown(KeyCode.S))
-        // {
-        //     tilePos.y -= 1;
-        // }
-        // if (Input.GetMouseButtonDown(0))
-        // {
-        //     Vector3 mousePosition = Input.mousePosition;
-        //     mousePosition.z = transform.position.y - map.transform.position.y + 1;
-        //     Vector3 worldpoint = Camera.main.ScreenToWorldPoint(mousePosition);
-        //     Vector3Int gridposition = map.WorldToCell(new Vector2(worldpoint.x, worldpoint.z));
-        //     tilePos = ((Vector2Int)gridposition);
-        //     Debug.Log($"Mouse Pos: {mousePosition.ToString()}    tilePos: {tilePos.ToString()}     WorldPoint: {worldpoint.ToString()}");
-        // }
+        {
+            Vector3 mouseWorldPos = GetMouseWorldPosition();
+            // Go from world position to a cell.
+            coordinate = grid.WorldToCell(mouseWorldPos);
+            Debug.Log($"Mouse World Pose: {mouseWorldPos.ToString()} ::::: Coordinate: {coordinate.ToString()}");
+        }
+    }
+
+    /**
+    * Converts mouse position to a world coordinant, With the y position of the world coordinant clamped to 0.
+    */
+    private Vector3 GetMouseWorldPosition()
+    {
+        Vector3 mp = Input.mousePosition;
+        mp.z = Camera.main.transform.position.y;
+        Vector3 mouseWorldPos = Camera.main.ScreenToWorldPoint(mp);
+        mouseWorldPos.y = transform.position.y;
+        return mouseWorldPos;
     }
 }
