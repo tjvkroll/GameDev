@@ -71,3 +71,9 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+
+# Adding this because of version mismatches. If this ends up becoming a problem,
+# remove this ignore and Travis's packages should be used.
+/[Pp]ackages/
+/[Pp]roject[Ss]ettings/
