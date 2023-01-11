@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 7003095827592707505}
   m_Layer: 0
   m_Name: tileMountain
-  m_TagString: Untagged
+  m_TagString: Tile
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -110,3 +110,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f3f4af0a3fd1f5444ad103bb4b7baea6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  tileX: 0
+  tileZ: 0
+  board: {fileID: 0}
