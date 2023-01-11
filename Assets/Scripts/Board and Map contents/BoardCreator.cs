@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class BoardCreator : MonoBehaviour{
@@ -7,10 +8,13 @@ public class BoardCreator : MonoBehaviour{
     public TileNode[] tileNodes; 
     public GameObject selectedUnit; 
     int[,] board; 
+    PathNode[,] pathGraph;
+    List<PathNode> currentPath = null; 
     int mapSizeX = 10;  
     int mapSizeY = 10;
     void Start(){
         GenerateMapData(); 
+        GeneratePathFindingGraph(); 
         GenerateMapVisuals(); 
     }
 
@@ -53,6 +57,63 @@ public class BoardCreator : MonoBehaviour{
 
     }
 
+
+    // All Components to boardpathfinding mechanics
+   public class PathNode {
+        public List<PathNode> neighbours;
+        public int x;
+        public int y; 
+        public PathNode(){
+            neighbours = new List<PathNode>();
+        }
+
+        public float DistanceTo(PathNode n){
+            return Vector3.Distance(
+                    new Vector3(x, 0, y), 
+                    new Vector3(n.x, 0,n.y)
+            );
+        }
+    }
+
+    // Builds a Graph used to pathfind in the game
+    void GeneratePathFindingGraph(){
+        // initializes array
+        pathGraph = new PathNode[mapSizeX, mapSizeY]; 
+        
+        // inistializes nodes
+        for(int x = 0; x < mapSizeX; x++){
+            for(int y = 0; y < mapSizeY; y++){
+                pathGraph[x,y] = new PathNode();
+                pathGraph[x,y].x = x; 
+                pathGraph[x,y].y = y; 
+            }        
+        }
+        
+        // initializes neighbors   
+        for(int x = 0; x < mapSizeX; x++){
+            for(int y = 0; y < mapSizeY; y++){                
+                // We have a 4 way graph but this also works with
+                // 6-way hexes and 8-ways tiles, etc. 
+                
+                // filling adjacency list for path graph
+                if (x > 0){
+                    pathGraph[x,y].neighbours.Add(pathGraph[x-1, y]);
+                }
+                if(x < mapSizeX-1){
+                    pathGraph[x,y].neighbours.Add(pathGraph[x+1, y]);
+                }
+                if (y > 0){
+                    pathGraph[x,y].neighbours.Add(pathGraph[x, y-1]);
+                }
+                if(y < mapSizeY-1){
+                    pathGraph[x,y].neighbours.Add(pathGraph[x, y+1]);
+                }
+            }
+        }
+        
+    }
+
+
     // Generates Map in the game
     void GenerateMapVisuals(){
         for(int x = 0; x < mapSizeX; x++){
@@ -68,7 +129,78 @@ public class BoardCreator : MonoBehaviour{
         }
     }
 
-    public void MoveSelectedUnitTo(int x, int y){
-        selectedUnit.transform.position = new Vector3(x, 0, y);
+    public Vector3 TileCoordToWorldCoord(int x, int z){
+        return new Vector3(x,0,z); 
+    }
+
+    // Generates a path from current selected unit to selected target. 
+    public void GeneratePathTo(int x, int z){
+        // clearing old path
+        selectedUnit.GetComponent<BoardObject>().currentPath = null;  
+
+        // Djikstras for movement
+        
+        // Initializing components
+        Dictionary<PathNode, float> dist = new Dictionary<PathNode, float>();
+        Dictionary<PathNode, PathNode> prev = new Dictionary<PathNode, PathNode>();
+        List<PathNode> unvisited = new List<PathNode>(); 
+        PathNode source = pathGraph[
+                                selectedUnit.GetComponent<BoardObject>().tileX,
+                                selectedUnit.GetComponent<BoardObject>().tileZ
+                                ];
+        PathNode target = pathGraph[x, z];       
+        dist[source] = 0; 
+        prev[source] = null;
+
+        // defaulting value
+        foreach(PathNode v in pathGraph){
+            if(v != source){
+                dist[v] = Mathf.Infinity;
+                prev[v] = null;
+            }
+            unvisited.Add(v);
+        }
+        
+        // Implementation of djikstras
+        while(unvisited.Count > 0){
+            // U is an unvisited node with the smallest distance
+            PathNode u = null;
+            foreach(PathNode possibleU in unvisited){
+                if(u == null || dist[possibleU] < dist[u]){
+                    u = possibleU; 
+                }
+            }
+
+            // allows the loop to terminate early if our target distance has been reached
+            if (u == target){
+                break; 
+            }
+            unvisited.Remove(u);
+
+            // Updating paths and distances
+            foreach(PathNode v in u.neighbours){
+                float alt = dist[u] + u.DistanceTo(v);
+                if(alt < dist[v]){
+                    dist[v] = alt;
+                    prev[v] = u; 
+                }
+            }
+        }
+
+        if(prev[target] == null){
+            // No route between source and target
+            return; 
+        }
+
+        currentPath = new List<PathNode>(); 
+        PathNode curr = target; 
+
+        // If a path exists then work back from target adding route from target to source
+        while(curr != null){
+            currentPath.Add(curr); 
+            curr = prev[curr];         
+        }
+        currentPath.Reverse();
+        selectedUnit.GetComponent<BoardObject>().currentPath = currentPath;  
     }
 }

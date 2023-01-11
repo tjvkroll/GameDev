@@ -4,8 +4,10 @@ using UnityEngine;
 
 public class BoardObject : MonoBehaviour
 {
-    public Vector2 boardPos; 
+    public int tileX;
+    public int tileZ;
+    //holds path for object if needed
+    public List<BoardCreator.PathNode> currentPath = null; 
     public string objName;
-    
 
 }
