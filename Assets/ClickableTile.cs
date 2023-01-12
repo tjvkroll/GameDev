@@ -8,7 +8,6 @@ public class ClickableTile : MonoBehaviour
     public int tileZ;
     public BoardCreator board; 
     void OnMouseUp(){
-        Debug.Log("Click"); 
-        board.MoveSelectedUnitTo(tileX,tileZ); 
+        board.GeneratePathTo(tileX,tileZ); 
     }
 }
