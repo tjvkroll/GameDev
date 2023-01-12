@@ -13,6 +13,11 @@ public class BoardCreator : MonoBehaviour{
     int mapSizeX = 10;  
     int mapSizeY = 10;
     void Start(){
+        // Setup the selectedUnit's variable
+        selectedUnit.GetComponent<BoardObject>().tileX = (int)selectedUnit.transform.position.x; 
+        selectedUnit.GetComponent<BoardObject>().tileZ = (int)selectedUnit.transform.position.z; 
+        selectedUnit.GetComponent<BoardObject>().map = this; 
+
         GenerateMapData(); 
         GeneratePathFindingGraph(); 
         GenerateMapVisuals(); 
@@ -57,22 +62,20 @@ public class BoardCreator : MonoBehaviour{
 
     }
 
+    //Calculates cost to enter tile 
+    public float CostToEnterTile(int sourceX, int sourceY, int targetX, int targetY){
+        TileNode tt = tileNodes[ board[targetX,targetY] ];
+        float cost = tt.movementCost; 
 
-    // All Components to boardpathfinding mechanics
-   public class PathNode {
-        public List<PathNode> neighbours;
-        public int x;
-        public int y; 
-        public PathNode(){
-            neighbours = new List<PathNode>();
+        if(UnitCanEnterTile(targetX, targetY) == false){
+            return Mathf.Infinity; 
         }
 
-        public float DistanceTo(PathNode n){
-            return Vector3.Distance(
-                    new Vector3(x, 0, y), 
-                    new Vector3(n.x, 0,n.y)
-            );
-        }
+        // Movement Normalization for Diagonal movement option        
+        // if(sourceX!=targetX && sourceY!=targetY){
+        //     cost += 0.001f; 
+        // }   
+        return cost;  
     }
 
     // Builds a Graph used to pathfind in the game
@@ -96,6 +99,7 @@ public class BoardCreator : MonoBehaviour{
                 // 6-way hexes and 8-ways tiles, etc. 
                 
                 // filling adjacency list for path graph
+                // Euclidian Distance (4 - way movement)
                 if (x > 0){
                     pathGraph[x,y].neighbours.Add(pathGraph[x-1, y]);
                 }
@@ -108,6 +112,38 @@ public class BoardCreator : MonoBehaviour{
                 if(y < mapSizeY-1){
                     pathGraph[x,y].neighbours.Add(pathGraph[x, y+1]);
                 }
+
+                // Optional: 8-Way movement (includes diagonal movment )
+                // If wanted also uncomment movement normalization in: CostToEnterTile
+
+
+                // // Try left
+                // if (x > 0){
+                //     pathGraph[x,y].neighbours.Add(pathGraph[x-1, y]);
+                //     if (y > 0){
+                //         pathGraph[x,y].neighbours.Add(pathGraph[x-1, y-1]);
+                //     }
+                //     if(y < mapSizeY-1){
+                //         pathGraph[x,y].neighbours.Add(pathGraph[x-1, y+1]);
+                //     }
+                // }
+                // // Try Right
+                // if(x < mapSizeX-1){
+                //     pathGraph[x,y].neighbours.Add(pathGraph[x+1, y]);
+                //     if (y > 0){
+                //         pathGraph[x,y].neighbours.Add(pathGraph[x+1, y-1]);
+                //     }
+                //     if(y < mapSizeY-1){
+                //         pathGraph[x,y].neighbours.Add(pathGraph[x+1, y+1]);
+                //     }
+                // }
+                // // Try straight up or down
+                // if (y > 0){
+                //     pathGraph[x,y].neighbours.Add(pathGraph[x, y-1]);
+                // }
+                // if(y < mapSizeY-1){
+                //     pathGraph[x,y].neighbours.Add(pathGraph[x, y+1]);
+                // }
             }
         }
         
@@ -133,10 +169,24 @@ public class BoardCreator : MonoBehaviour{
         return new Vector3(x,0,z); 
     }
 
+
+    public bool UnitCanEnterTile(int x, int z){
+
+        // Here we could test various unit's hover/fly/walk capablitiies
+        // versus terain flags to see if they're allowed in the tile
+
+        return tileNodes[ board[x,z] ].isWalkable; 
+    }
+
     // Generates a path from current selected unit to selected target. 
     public void GeneratePathTo(int x, int z){
         // clearing old path
         selectedUnit.GetComponent<BoardObject>().currentPath = null;  
+
+        // Dont generate paths to tiles that are inacessible 
+        if(UnitCanEnterTile(x,z) == false){
+            return; 
+        }
 
         // Djikstras for movement
         
@@ -179,7 +229,8 @@ public class BoardCreator : MonoBehaviour{
 
             // Updating paths and distances
             foreach(PathNode v in u.neighbours){
-                float alt = dist[u] + u.DistanceTo(v);
+                //float alt = dist[u] + u.DistanceTo(v);
+                float alt = dist[u] + CostToEnterTile(u.x, u.y, v.x, v.y);
                 if(alt < dist[v]){
                     dist[v] = alt;
                     prev[v] = u; 

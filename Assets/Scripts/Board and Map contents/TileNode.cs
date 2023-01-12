@@ -7,6 +7,9 @@ public class TileNode{
     // Tile member attributes 
     public string name; 
     public GameObject tileVisualPrefab;
+    
+    
     // we can add a type variable that holds the type of tile and it's costs/penatlies etc. 
-
+    public float movementCost = 1; 
+    public bool isWalkable = true; 
 }
