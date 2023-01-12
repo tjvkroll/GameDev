@@ -81,7 +81,6 @@ public class BoardCreator : MonoBehaviour
     public void MoveSelectedUnitTo(int x, int y)
     {
         selectedUnit.transform.position = new Vector3(x, 0, y);
-        boardUI.SetAttackRange(x, y, 5);
-        boardUI.SetMoveableRange(x, y, 3);
+        boardUI.SetUITiles(x, y, 3, 5);
     }
 }

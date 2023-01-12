@@ -59,6 +59,12 @@ public class BoardUI : MonoBehaviour
         QuadMovementUI[_x, _y].GetComponent<Renderer>().material.color = col;
     }
 
+    public void SetUITiles(int _x, int _y, int moveableRangeManDist, int attackRangeManDist)
+    {
+        SetAttackRange(_x, _y, attackRangeManDist);
+        SetMoveableRange(_x, _y, moveableRangeManDist);
+    }
+
     public void SetMoveableRange(int _x, int _y, int manhattan_distance)
     {
         for (int x = 0; x < mapSizeX; x++)
