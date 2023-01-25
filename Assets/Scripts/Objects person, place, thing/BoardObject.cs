@@ -6,7 +6,7 @@ public class BoardObject : MonoBehaviour
 {
     public int tileX;
     public int tileZ;
-    public BoardCreator map; 
+    public BoardManager map; 
     //holds path for object if needed
     public List<PathNode> currentPath = null; 
     //public string objName;
@@ -28,7 +28,7 @@ public class BoardObject : MonoBehaviour
         }
     }
 
-    public void MoveNextTile(){
+    public void MoveNextTile() {
         float remainingMovement = moveSpeed; 
         while(remainingMovement > 0){
             if(currentPath == null){
@@ -38,8 +38,10 @@ public class BoardObject : MonoBehaviour
             // Get cost from current tile to next tile
             remainingMovement -= map.CostToEnterTile(currentPath[0].x, currentPath[0].y, currentPath[1].x, currentPath[1].y);
             // Now grab the new first node and move us to that position
+            map.clickableBoard[tileX, tileZ].occupant = null;
             tileX = currentPath[1].x;
             tileZ = currentPath[1].y; 
+            map.clickableBoard[tileX, tileZ].occupant = this;
             transform.position = map.TileCoordToWorldCoord(tileX, tileZ);
             // Remove old current/first node from the path. 
             currentPath.RemoveAt(0); 

@@ -9,9 +9,14 @@ public class CameraController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        if (CharPos) MoveToUnit(CharPos); 
+    }
+
+    public void MoveToUnit(Transform unitPos) {
+        CharPos = unitPos;
         Vector3 Cam = CharPos.position; 
         Cam.y = transform.position.y; 
-        transform.position = Cam; 
+        transform.position = Cam;
     }
 
     // Update is called once per frame
