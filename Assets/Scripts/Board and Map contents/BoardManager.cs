@@ -3,24 +3,35 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class BoardCreator : MonoBehaviour{
+public class BoardManager : MonoBehaviour{
 
     public TileNode[] tileNodes; 
-    public GameObject selectedUnit; 
+    public BoardObject selectedUnit; 
     int[,] board; 
+    public ClickableTile[,] clickableBoard; 
     PathNode[,] pathGraph;
+    public BoardAdmin admin; 
     List<PathNode> currentPath = null; 
     int mapSizeX = 10;  
     int mapSizeY = 10;
-    void Start(){
-        // Setup the selectedUnit's variable
-        selectedUnit.GetComponent<BoardObject>().tileX = (int)selectedUnit.transform.position.x; 
-        selectedUnit.GetComponent<BoardObject>().tileZ = (int)selectedUnit.transform.position.z; 
-        selectedUnit.GetComponent<BoardObject>().map = this; 
 
-        GenerateMapData(); 
-        GeneratePathFindingGraph(); 
-        GenerateMapVisuals(); 
+    public void InitializeBoard() {
+        GenerateMapData();
+        GeneratePathFindingGraph();
+        GenerateMapVisuals();
+    }
+    
+
+    // Setting the current unit (called in BoardAdmin)
+    public void OnNewSelection(BoardObject newSelection){
+        selectedUnit = newSelection; 
+        //Draw new movement UI for new unit
+    }
+
+    // clearing selected units
+    public void OnClearSelection(){
+        // Clear movement UI
+        selectedUnit = null;
     }
 
     //Builds the structure of the map. Roads, Mountains, etc.
@@ -152,6 +163,7 @@ public class BoardCreator : MonoBehaviour{
 
     // Generates Map in the game
     void GenerateMapVisuals(){
+        clickableBoard = new ClickableTile[mapSizeX,mapSizeY];
         for(int x = 0; x < mapSizeX; x++){
             for(int y = 0; y < mapSizeY; y++){
                 TileNode tileNode = tileNodes[board[x,y]]; 
@@ -161,6 +173,7 @@ public class BoardCreator : MonoBehaviour{
                 ct.tileX = x; 
                 ct.tileZ = y;
                 ct.board = this; 
+                clickableBoard[x,y] = ct; 
             }
         }
     }
@@ -181,7 +194,7 @@ public class BoardCreator : MonoBehaviour{
     // Generates a path from current selected unit to selected target. 
     public void GeneratePathTo(int x, int z){
         // clearing old path
-        selectedUnit.GetComponent<BoardObject>().currentPath = null;  
+        selectedUnit.currentPath = null;  
 
         // Dont generate paths to tiles that are inacessible 
         if(UnitCanEnterTile(x,z) == false){
@@ -195,8 +208,8 @@ public class BoardCreator : MonoBehaviour{
         Dictionary<PathNode, PathNode> prev = new Dictionary<PathNode, PathNode>();
         List<PathNode> unvisited = new List<PathNode>(); 
         PathNode source = pathGraph[
-                                selectedUnit.GetComponent<BoardObject>().tileX,
-                                selectedUnit.GetComponent<BoardObject>().tileZ
+                                selectedUnit.tileX,
+                                selectedUnit.tileZ
                                 ];
         PathNode target = pathGraph[x, z];       
         dist[source] = 0; 
@@ -252,6 +265,7 @@ public class BoardCreator : MonoBehaviour{
             curr = prev[curr];         
         }
         currentPath.Reverse();
-        selectedUnit.GetComponent<BoardObject>().currentPath = currentPath;  
+        selectedUnit.currentPath = currentPath;  
+        Debug.Log($"Set path to {x}, {z}");
     }
 }

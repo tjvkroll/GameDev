@@ -6,8 +6,10 @@ public class ClickableTile : MonoBehaviour
 {
     public int tileX;
     public int tileZ;
-    public BoardCreator board; 
-    void OnMouseUp(){
-        board.GeneratePathTo(tileX,tileZ); 
+    public BoardManager board;
+    public BoardObject occupant;  
+    void OnMouseUp() {
+        // board.GeneratePathTo(tileX,tileZ);
+        board.admin.OnSelectTile(this);
     }
 }
