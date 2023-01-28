@@ -35,7 +35,7 @@ public class PieceManager : MonoBehaviour
         gobo.map = map;
         map.clickableBoard[tileX, tileY].occupant = gobo;
         gobo.tileX = tileX;
-        gobo.tileZ = tileY;
+        gobo.tileY = tileY;
         playerUnits.Add(gobo); // CHANGE TO BE DIFFERENT TYPES
         return true;
     }
