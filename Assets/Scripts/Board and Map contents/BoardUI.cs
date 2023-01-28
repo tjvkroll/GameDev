@@ -22,7 +22,12 @@ public class BoardUI : MonoBehaviour
         ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray, out hit))
         {
+            Cursor.SetActive(true);
             UpdateCursor();
+        }
+        else
+        {
+            Cursor.SetActive(false);
         }
     }
 
