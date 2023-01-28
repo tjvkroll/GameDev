@@ -38,7 +38,7 @@ public class BoardUI : MonoBehaviour
         if (hit.transform.CompareTag("Tile"))
         {
             int _x = hit.transform.gameObject.GetComponent<ClickableTile>().tileX;
-            int _y = hit.transform.gameObject.GetComponent<ClickableTile>().tileZ;
+            int _y = hit.transform.gameObject.GetComponent<ClickableTile>().tileY;
             Cursor.transform.position = new Vector3(_x, .56f, _y);
         }
     }
@@ -56,7 +56,6 @@ public class BoardUI : MonoBehaviour
                 QuadMovementUI[x, y] = Instantiate(uiQuadPrefab, new Vector3(x, .55f, y), Quaternion.Euler(90, 0, 0), uiQuadContainer);
             }
         }
-        SetTileTest(0, 0);
     }
 
     private void SetTileColor(int _x, int _y, Color col)

@@ -3,18 +3,27 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+
+// NOTE: at around 3000 nodes, this implementation starts to slow down..
+// We can optimize and parallelize some aspects of this, and use coroutines if need by.
+// But if we ever wanted to go beyond 3000 nodes (55x55 roughly) we would need to look into
+// alternate pathfinding items. Its worth pointing out that 3000 nodes is incredibly big, 
+// and most fire emblem games only use ~400 nodes (~20x~20)
 public class BoardManager : MonoBehaviour
 {
-
     public TileNode[] tileNodes;
     public BoardObject selectedUnit;
     int[,] board;
     public ClickableTile[,] clickableBoard;
-    PathNode[,] pathGraph;
     public BoardAdmin admin;
+    int mapSizeX = 50;
+    int mapSizeY = 50;
+
+    // Pathfinding and Djikstras
+    PathNode[,] pathGraph;
     List<PathNode> currentPath = null;
-    int mapSizeX = 10;
-    int mapSizeY = 10;
+    Dictionary<PathNode, float> dist;
+    Dictionary<PathNode, PathNode> prev;
 
     // BoardUI
     [Header("Board UI")]
@@ -31,6 +40,7 @@ public class BoardManager : MonoBehaviour
     {
         GenerateMapData();
         GeneratePathFindingGraph();
+        GenerateQuadMovementUI(mapSizeX, mapSizeY);
         GenerateMapVisuals();
     }
 
@@ -53,14 +63,15 @@ public class BoardManager : MonoBehaviour
     public void OnNewSelection(BoardObject newSelection)
     {
         selectedUnit = newSelection;
-        //Draw new movement UI for new unit
+        RunDijkstras(selectedUnit.moveSpeed);
+        SetMoveableRange(selectedUnit.moveSpeed);
     }
 
     // clearing selected units
     public void OnClearSelection()
     {
-        // Clear movement UI
         selectedUnit = null;
+        ClearUITiles();
     }
 
     //Builds the structure of the map. Roads, Mountains, etc.
@@ -239,32 +250,22 @@ public class BoardManager : MonoBehaviour
         return true;
     }
 
-    // Generates a path from current selected unit to selected target. 
-    public void GeneratePathTo(int x, int y)
+    // Djikstras, Should be ran each time a character is selected pretty much only once.
+    // once the dictionaries are populated, other functions can just use those member functions (prev and dist)
+    // TODO: limit the graph traversal by the units max travel distance.. If the unit can only travel 10 squares,
+    // no need to check anything beyond that. 
+    public void RunDijkstras(int travelDistance)
     {
-        // clearing old path
-        selectedUnit.currentPath = null;
-
-        // Dont generate paths to tiles that are inacessible 
-        if (UnitCanEnterTile(x, y) == false)
-        {
-            return;
-        }
-
-        // Djikstras for movement
-
-        // Initializing components
-        Dictionary<PathNode, float> dist = new Dictionary<PathNode, float>();
-        Dictionary<PathNode, PathNode> prev = new Dictionary<PathNode, PathNode>();
+        // Initializing/resetting components
+        dist = new Dictionary<PathNode, float>();
+        prev = new Dictionary<PathNode, PathNode>();
         List<PathNode> unvisited = new List<PathNode>();
         PathNode source = pathGraph[
                                 selectedUnit.tileX,
                                 selectedUnit.tileY
                                 ];
-        PathNode target = pathGraph[x, y];
         dist[source] = 0;
         prev[source] = null;
-
         // defaulting value
         foreach (PathNode v in pathGraph)
         {
@@ -275,7 +276,6 @@ public class BoardManager : MonoBehaviour
             }
             unvisited.Add(v);
         }
-
         // Implementation of djikstras
         while (unvisited.Count > 0)
         {
@@ -288,18 +288,11 @@ public class BoardManager : MonoBehaviour
                     u = possibleU;
                 }
             }
-
-            // allows the loop to terminate early if our target distance has been reached
-            if (u == target)
-            {
-                break;
-            }
             unvisited.Remove(u);
-
             // Updating paths and distances
             foreach (PathNode v in u.neighbours)
             {
-                //float alt = dist[u] + u.DistanceTo(v);
+                //float alt = dist[u] + u.DistanceTo(v); // This is if we're doing nominal distance
                 float alt = dist[u] + CostToEnterTile(u.x, u.y, v.x, v.y);
                 if (alt < dist[v])
                 {
@@ -308,16 +301,24 @@ public class BoardManager : MonoBehaviour
                 }
             }
         }
+    }
 
-        if (prev[target] == null)
+    // This should only be called after we have successfully selected a unit to generate a graph 
+    // from. This pulls from the currently set PREV dictionary. 
+    public void GeneratePathTo(int x, int y)
+    {
+        // clearing old path
+        selectedUnit.currentPath = null;
+        // Dont generate paths to tiles that are inacessible 
+        if (UnitCanEnterTile(x, y) == false) return;
+        PathNode target = pathGraph[x, y];
+        if (prev[target] == null || dist[target] > selectedUnit.moveSpeed)
         {
-            // No route between source and target
+            // No route between source and target OR the distance is further than possible.
             return;
         }
-
         currentPath = new List<PathNode>();
         PathNode curr = target;
-
         // If a path exists then work back from target adding route from target to source
         while (curr != null)
         {
@@ -336,7 +337,7 @@ public class BoardManager : MonoBehaviour
         {
             int _x = hit.transform.gameObject.GetComponent<ClickableTile>().tileX;
             int _y = hit.transform.gameObject.GetComponent<ClickableTile>().tileY;
-            Cursor.transform.position = new Vector3(_x, .56f, _y);
+            Cursor.transform.position = new Vector3(_x, .501f, _y);
         }
     }
 
@@ -350,10 +351,11 @@ public class BoardManager : MonoBehaviour
         {
             for (int y = 0; y < mapSizeY; y++)
             {
-                QuadMovementUI[x, y] = Instantiate(uiQuadPrefab, new Vector3(x, .55f, y), Quaternion.Euler(90, 0, 0), uiQuadContainer);
+                QuadMovementUI[x, y] = Instantiate(
+                    uiQuadPrefab, new Vector3(x, .55f, y), Quaternion.Euler(90, 0, 0), uiQuadContainer);
             }
         }
-        SetTileTest(0, 0);
+        ClearUITiles();
     }
 
     private void SetTileColor(int _x, int _y, Color col)
@@ -361,21 +363,11 @@ public class BoardManager : MonoBehaviour
         QuadMovementUI[_x, _y].GetComponent<Renderer>().material.color = col;
     }
 
-    public void SetUITiles(int _x, int _y, int moveableRangeManDist, int attackRangeManDist)
+    public void SetMoveableRange(int manhattan_distance)
     {
-        SetAttackRange(_x, _y, attackRangeManDist);
-        SetMoveableRange(_x, _y, moveableRangeManDist);
-    }
-
-    public void SetMoveableRange(int _x, int _y, int manhattan_distance)
-    {
-        for (int x = 0; x < mapSizeX; x++)
+        foreach (KeyValuePair<PathNode, float> nodepair in dist)
         {
-            for (int y = 0; y < mapSizeY; y++)
-            {
-                float dist = Mathf.Abs(_x - x) + Mathf.Abs(_y - y);
-                if (dist < manhattan_distance) { SetTileColor(x, y, movable); }
-            }
+            if (nodepair.Value <= manhattan_distance) { SetTileColor(nodepair.Key.x, nodepair.Key.y, movable); }
         }
     }
 
@@ -388,6 +380,17 @@ public class BoardManager : MonoBehaviour
                 float dist = Mathf.Abs(_x - x) + Mathf.Abs(_y - y);
                 if (dist < manhattan_distance) { SetTileColor(x, y, attackable); }
                 else { SetTileColor(x, y, Color.clear); }
+            }
+        }
+    }
+
+    public void ClearUITiles()
+    {
+        for (int x = 0; x < mapSizeX; x++)
+        {
+            for (int y = 0; y < mapSizeY; y++)
+            {
+                SetTileColor(x, y, Color.clear);
             }
         }
     }
