@@ -60,8 +60,7 @@ public class BoardAdmin : MonoBehaviour
             case TurnState.SELECTION:
             break;
             case TurnState.MOVEMENT:
-                currentlySelectedObject.MoveNextTile();
-                StartState(TurnState.INTERACT);
+                OnConfirmMovement();
             break;
             case TurnState.INTERACT:
             break;
@@ -111,6 +110,7 @@ public class BoardAdmin : MonoBehaviour
     // SELECTION
     bool OnSelectSelection(ClickableTile tile) {
         //if (!selectionCandidate.belongstoplayer) return false;
+        if(tile.occupant == null){ return false; }
         currentlySelectedObject = tile.occupant;
         StartState(TurnState.MOVEMENT);
         return true;
@@ -125,7 +125,15 @@ public class BoardAdmin : MonoBehaviour
     // MOVEMENT
     bool OnSelectMovement(ClickableTile destination) {
         // is tile occupied
-        boardManager.GeneratePathTo(destination.tileX, destination.tileZ);
+        boardManager.GeneratePathTo(destination.tileX, destination.tileY);
+        return true;
+    }
+
+    bool OnConfirmMovement()
+    {
+        if (currentlySelectedObject.currentPath == null) return false;
+        currentlySelectedObject.MoveNextTile();
+        StartState(TurnState.INTERACT);
         return true;
     }
 
