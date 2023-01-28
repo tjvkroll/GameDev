@@ -217,36 +217,36 @@ public class BoardManager : MonoBehaviour
                 GameObject go = (GameObject)Instantiate(tileNode.tileVisualPrefab, new Vector3(x, 0, y), Quaternion.identity, transform);
                 ClickableTile ct = go.GetComponent<ClickableTile>();
                 ct.tileX = x;
-                ct.tileZ = y;
+                ct.tileY = y;
                 ct.board = this;
                 clickableBoard[x, y] = ct;
             }
         }
     }
 
-    public Vector3 TileCoordToWorldCoord(int x, int z)
+    public Vector3 TileCoordToWorldCoord(int x, int y)
     {
-        return new Vector3(x, 0, z);
+        return new Vector3(x, 0, y);
     }
 
 
-    public bool UnitCanEnterTile(int x, int z)
+    public bool UnitCanEnterTile(int x, int y)
     {
 
         // Here we could test various unit's hover/fly/walk capablitiies
         // versus terain flags to see if they're allowed in the tile
-
-        return tileNodes[board[x, z]].isWalkable;
+        if (clickableBoard[x, y].occupant != null || !tileNodes[board[x, y]].isWalkable) { return false; }
+        return true;
     }
 
     // Generates a path from current selected unit to selected target. 
-    public void GeneratePathTo(int x, int z)
+    public void GeneratePathTo(int x, int y)
     {
         // clearing old path
         selectedUnit.currentPath = null;
 
         // Dont generate paths to tiles that are inacessible 
-        if (UnitCanEnterTile(x, z) == false)
+        if (UnitCanEnterTile(x, y) == false)
         {
             return;
         }
@@ -259,9 +259,9 @@ public class BoardManager : MonoBehaviour
         List<PathNode> unvisited = new List<PathNode>();
         PathNode source = pathGraph[
                                 selectedUnit.tileX,
-                                selectedUnit.tileZ
+                                selectedUnit.tileY
                                 ];
-        PathNode target = pathGraph[x, z];
+        PathNode target = pathGraph[x, y];
         dist[source] = 0;
         prev[source] = null;
 
@@ -326,7 +326,7 @@ public class BoardManager : MonoBehaviour
         }
         currentPath.Reverse();
         selectedUnit.currentPath = currentPath;
-        Debug.Log($"Set path to {x}, {z}");
+        Debug.Log($"Set path to {x}, {y}");
     }
 
     // BOARD UI
@@ -335,7 +335,7 @@ public class BoardManager : MonoBehaviour
         if (hit.transform.CompareTag("Tile"))
         {
             int _x = hit.transform.gameObject.GetComponent<ClickableTile>().tileX;
-            int _y = hit.transform.gameObject.GetComponent<ClickableTile>().tileZ;
+            int _y = hit.transform.gameObject.GetComponent<ClickableTile>().tileY;
             Cursor.transform.position = new Vector3(_x, .56f, _y);
         }
     }
