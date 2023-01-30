@@ -116,7 +116,7 @@ MonoBehaviour:
     tileVisualPrefab: {fileID: 4006065565199580450, guid: 5feaab1d40e845b4d8788f0a576d41f6,
       type: 3}
     movementCost: 1
-    isWalkable: 1
+    isWalkable: 0
   - name: Swamp
     tileVisualPrefab: {fileID: 4444794352315691084, guid: c2f94cae0a9ce5445ab0f9e3d4932f28,
       type: 3}
@@ -124,3 +124,6 @@ MonoBehaviour:
     isWalkable: 1
   selectedUnit: {fileID: 0}
   admin: {fileID: 0}
+  Cursor: {fileID: 0}
+  uiQuadContainer: {fileID: 0}
+  uiQuadPrefab: {fileID: 0}
